@@ -8,34 +8,21 @@ import (
 	vault_api "github.com/hashicorp/vault/api"
 )
 
-func checkAuth(r *http.Request, vault *vault_api.Logical) (bool, string) {
-	username, password, ok := r.BasicAuth()
-	if !ok {
-		return false, "request is missing basic auth credentials"
-	}
-	secret, err := vault.Read("secret/tfstate/users/" + username)
-	if err != nil {
-		return false, "couldn't get user " + username + " info from vault: " + err.Error()
-	}
-	if secret.Data["password"].(string) != password {
-		return false, "invalid password for " + username
-	}
-	return true, ""
-}
-
 func main() {
-	vault_client, err := vault_api.NewClient(nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	vault := vault_client.Logical()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		ok, message := checkAuth(r, vault)
+		_, password, ok := r.BasicAuth()
 		if !ok {
 			w.WriteHeader(401)
-			log.Print(message)
+			log.Print("request is missing basic auth credentials")
 			return
 		}
+		vault_client, err := vault_api.NewClient(nil)
+		if err != nil {
+			w.WriteHeader(500)
+			log.Fatal(err)
+		}
+		vault_client.SetToken(password)
+		vault := vault_client.Logical()
 		switch r.Method {
 		case "POST":
 			body, err := ioutil.ReadAll(r.Body)
@@ -44,7 +31,7 @@ func main() {
 				log.Print("couldn't read request body:", err)
 				return
 			}
-			_, err = vault.Write("secret/tfstate/data", map[string]interface{}{"data": body})
+			_, err = vault.Write("secret/tfstate", map[string]interface{}{"data": body})
 			if err != nil {
 				w.WriteHeader(500)
 				log.Print("couldn't write tfstate:", err)
@@ -52,7 +39,7 @@ func main() {
 			}
 			log.Print("wrote state")
 		case "GET":
-			secret, err := vault.Read("secret/tfstate/data")
+			secret, err := vault.Read("secret/tfstate")
 			if err != nil {
 				w.WriteHeader(500)
 				log.Print("couldn't read tfstate:", err)
