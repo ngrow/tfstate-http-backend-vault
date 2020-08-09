@@ -4,11 +4,16 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	vault_api "github.com/hashicorp/vault/api"
 )
 
 func main() {
+	secret_path := os.Getenv("TFSTATE_SECRET_PATH")
+	if secret_path == "" {
+		secret_path = "secret/tfstate"
+	}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, password, ok := r.BasicAuth()
 		if !ok {
@@ -31,7 +36,7 @@ func main() {
 				log.Print("couldn't read request body:", err)
 				return
 			}
-			_, err = vault.Write("secret/tfstate", map[string]interface{}{"data": body})
+			_, err = vault.Write(secret_path, map[string]interface{}{"data": body})
 			if err != nil {
 				w.WriteHeader(500)
 				log.Print("couldn't write tfstate:", err)
@@ -39,7 +44,7 @@ func main() {
 			}
 			log.Print("wrote state")
 		case "GET":
-			secret, err := vault.Read("secret/tfstate")
+			secret, err := vault.Read(secret_path)
 			if err != nil {
 				w.WriteHeader(500)
 				log.Print("couldn't read tfstate:", err)
