@@ -28,7 +28,7 @@ func main() {
 				log.Print("couldn't read request body:", err)
 				return
 			}
-			_, err = vault.Write(secret_path, map[string]interface{}{"data": body})
+			_, err = vault.Write(secret_path, map[string]interface{}{"data": map[string]interface{}{"data": body}})
 			if err != nil {
 				w.WriteHeader(500)
 				log.Print("couldn't write tfstate:", err)
@@ -42,7 +42,13 @@ func main() {
 				log.Print("couldn't read tfstate:", err)
 				return
 			}
-			w.Write(secret.Data["data"].([]byte))
+			if secret == nil {
+				return
+			}
+			data := secret.Data["data"]
+			if data != nil {
+				w.Write(data.([]byte))
+			}
 			log.Print("read state")
 		case "LOCK":
 			w.WriteHeader(405)
