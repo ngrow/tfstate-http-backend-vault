@@ -14,20 +14,12 @@ func main() {
 	if secret_path == "" {
 		secret_path = "secret/tfstate"
 	}
+	vault_client, err := vault_api.NewClient(nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	vault := vault_client.Logical()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, password, ok := r.BasicAuth()
-		if !ok {
-			w.WriteHeader(401)
-			log.Print("request is missing basic auth credentials")
-			return
-		}
-		vault_client, err := vault_api.NewClient(nil)
-		if err != nil {
-			w.WriteHeader(500)
-			log.Fatal(err)
-		}
-		vault_client.SetToken(password)
-		vault := vault_client.Logical()
 		switch r.Method {
 		case "POST":
 			body, err := ioutil.ReadAll(r.Body)
