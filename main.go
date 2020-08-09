@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -8,6 +9,8 @@ import (
 
 	vault_api "github.com/hashicorp/vault/api"
 )
+
+const DEBUG = false
 
 // fileExists checks if a file exists and is not a directory before we
 // try using it to prevent further errors.
@@ -50,7 +53,8 @@ func main() {
 				log.Print("couldn't read request body:", err)
 				return
 			}
-			_, err = vault.Write(secret_path, map[string]interface{}{"data": map[string]interface{}{"data": body}})
+			encoded_body := base64.StdEncoding.EncodeToString(body)
+			_, err = vault.Write(secret_path, map[string]interface{}{"data": map[string]interface{}{"data": encoded_body}})
 			if err != nil {
 				w.WriteHeader(500)
 				log.Print("couldn't write tfstate:", err)
@@ -69,9 +73,24 @@ func main() {
 			}
 			data := secret.Data["data"]
 			if data != nil {
-				w.Write(data.([]byte))
+				data = (data.(map[string]interface{}))["data"]
 			}
-			log.Print("read state")
+			if data != nil {
+				decoded_data, err := base64.StdEncoding.DecodeString(data.(string))
+				if err != nil {
+					log.Print("couldn't decode base64: ", err)
+					w.WriteHeader(500)
+					return
+				}
+				_, err = w.Write(decoded_data)
+				if err != nil {
+					log.Print("error writing response: ", err)
+					return
+				}
+				if DEBUG {
+					log.Print("read state: ", decoded_data)
+				}
+			}
 		case "LOCK":
 			w.WriteHeader(405)
 		case "UNLOCK":
