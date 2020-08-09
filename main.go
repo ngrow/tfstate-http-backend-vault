@@ -9,6 +9,16 @@ import (
 	vault_api "github.com/hashicorp/vault/api"
 )
 
+// fileExists checks if a file exists and is not a directory before we
+// try using it to prevent further errors.
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
 func main() {
 	secret_path := os.Getenv("TFSTATE_SECRET_PATH")
 	if secret_path == "" {
@@ -17,6 +27,18 @@ func main() {
 	vault_client, err := vault_api.NewClient(nil)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if _, ok := os.LookupEnv("VAULT_TOKEN"); !ok {
+		token_filename := os.Getenv("HOME") + "/.vault-token"
+		if fileExists(token_filename) {
+			token, err := ioutil.ReadFile(token_filename)
+			if err != nil {
+				log.Fatal("couldn't read token: ", err)
+			}
+			vault_client.SetToken(string(token))
+		} else {
+			log.Fatal("vault token is not specified")
+		}
 	}
 	vault := vault_client.Logical()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
