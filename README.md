@@ -29,3 +29,8 @@ terraform {
   }
 }
 ```
+
+TODO
+----
+
+* Lock support
