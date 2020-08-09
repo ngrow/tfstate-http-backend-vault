@@ -1,7 +1,7 @@
 tfstate-http-backend-vault
 ==========================
 
-[https://www.terraform.io](Terraform) [https://www.terraform.io/docs/backends/types/http.html](HTTP state backend) implementation using [https://www.vaultproject.io/](Vault) to store state.
+[Terraform](https://www.terraform.io) [HTTP state backend](https://www.terraform.io/docs/backends/types/http.html) implementation using [Vault](https://www.vaultproject.io/) to store state.
 
 Usage
 -----
