@@ -50,22 +50,24 @@ func main() {
 			body, err := ioutil.ReadAll(r.Body)
 			if err != nil {
 				w.WriteHeader(500)
-				log.Print("couldn't read request body:", err)
+				log.Print("couldn't read request body: ", err)
 				return
 			}
 			encoded_body := base64.StdEncoding.EncodeToString(body)
 			_, err = vault.Write(secret_path, map[string]interface{}{"data": map[string]interface{}{"data": encoded_body}})
 			if err != nil {
 				w.WriteHeader(500)
-				log.Print("couldn't write tfstate:", err)
+				log.Print("couldn't write tfstate: ", err)
 				return
 			}
-			log.Print("wrote state")
+			if DEBUG {
+				log.Print("wrote state: ", string(body))
+			}
 		case "GET":
 			secret, err := vault.Read(secret_path)
 			if err != nil {
 				w.WriteHeader(500)
-				log.Print("couldn't read tfstate:", err)
+				log.Print("couldn't read tfstate: ", err)
 				return
 			}
 			if secret == nil {
