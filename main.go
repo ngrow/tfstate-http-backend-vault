@@ -12,7 +12,7 @@ import (
 func main() {
 	secret_path := os.Getenv("TFSTATE_SECRET_PATH")
 	if secret_path == "" {
-		secret_path = "secret/tfstate"
+		secret_path = "secret/data/tfstate"
 	}
 	vault_client, err := vault_api.NewClient(nil)
 	if err != nil {
