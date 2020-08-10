@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"errors"
+	"flag"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -10,6 +11,14 @@ import (
 	"github.com/hashicorp/go-hclog"
 	vault_api "github.com/hashicorp/vault/api"
 )
+
+var (
+	flagAddr string
+)
+
+func init() {
+	flag.StringVar(&flagAddr, "addr", ":8080", "Address to serve")
+}
 
 // fileExists checks if a file exists and is not a directory before we
 // try using it to prevent further errors.
@@ -54,6 +63,8 @@ func newVaultClient() (*vault_api.Client, error) {
 }
 
 func main() {
+	flag.Parse()
+
 	hclog.Default().SetLevel(hclog.Info)
 
 	secret_path := os.Getenv("TFSTATE_SECRET_PATH")
@@ -122,7 +133,7 @@ func main() {
 		}
 	})
 
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(flagAddr, nil); err != nil {
 		hclog.Default().Error("failed to serve HTTP", "err", err)
 	}
 }
