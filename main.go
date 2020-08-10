@@ -27,6 +27,7 @@ func newVaultClient() (*vault_api.Client, error) {
 		hclog.Default().Error("failed to create Vault API client", "err", err)
 		return nil, err
 	}
+
 	if _, ok := os.LookupEnv("VAULT_TOKEN"); !ok {
 		token_filename := os.Getenv("HOME") + "/.vault-token"
 		if fileExists(token_filename) {
@@ -41,6 +42,14 @@ func newVaultClient() (*vault_api.Client, error) {
 		}
 		vault_client.SetToken(string(token))
 	}
+
+	if res, err := vault_client.Sys().Health(); err != nil {
+		hclog.Default().Error("failed to check vault's health", "err", err)
+		return nil, err
+	} else {
+		hclog.Default().Info("vault's healthy", "version", res.Version)
+	}
+
 	return vault_client, nil
 }
 
