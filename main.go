@@ -5,19 +5,24 @@ import (
 	"errors"
 	"flag"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
+	"strings"
 
+	"github.com/coreos/go-systemd/activation"
 	"github.com/hashicorp/go-hclog"
 	vault_api "github.com/hashicorp/vault/api"
 )
 
 var (
-	flagAddr string
+	flagAddr      string
+	flagVaultAddr string
 )
 
 func init() {
-	flag.StringVar(&flagAddr, "addr", ":8080", "Address to serve")
+	flag.StringVar(&flagAddr, "listen-addr", ":8080", "Address to serve")
+	flag.StringVar(&flagVaultAddr, "vault-addr", "", "Adress of Vault server")
 }
 
 // fileExists checks if a file exists and is not a directory before we
@@ -31,7 +36,13 @@ func fileExists(filename string) bool {
 }
 
 func newVaultClient() (*vault_api.Client, error) {
-	vault_client, err := vault_api.NewClient(nil)
+	var config *vault_api.Config
+	if flagVaultAddr != "" {
+		config = &vault_api.Config{
+			Address: flagVaultAddr,
+		}
+	}
+	vault_client, err := vault_api.NewClient(config)
 	if err != nil {
 		hclog.Default().Error("failed to create Vault API client", "err", err)
 		return nil, err
@@ -39,7 +50,7 @@ func newVaultClient() (*vault_api.Client, error) {
 
 	if _, ok := os.LookupEnv("VAULT_TOKEN"); !ok {
 		token_filename := os.Getenv("HOME") + "/.vault-token"
-		if fileExists(token_filename) {
+		if !fileExists(token_filename) {
 			var err = errors.New("there is such file: " + token_filename)
 			hclog.Default().Error("vault token is not specified", "err", err)
 			return nil, err
@@ -49,7 +60,8 @@ func newVaultClient() (*vault_api.Client, error) {
 			hclog.Default().Error("couldn't read token", "err", err)
 			return nil, err
 		}
-		vault_client.SetToken(string(token))
+		//hclog.Default().Info("couldn't read token", "token", string(token))
+		vault_client.SetToken(strings.TrimSpace(string(token)))
 	}
 
 	if res, err := vault_client.Sys().Health(); err != nil {
@@ -60,6 +72,14 @@ func newVaultClient() (*vault_api.Client, error) {
 	}
 
 	return vault_client, nil
+}
+
+func getListener(flagAddr string) (net.Listener, error) {
+	if listeners, err := activation.Listeners(); err != nil {
+		return net.Listen("tcp", flagAddr)
+	} else {
+		return listeners[0], nil
+	}
 }
 
 func main() {
@@ -133,7 +153,13 @@ func main() {
 		}
 	})
 
-	if err := http.ListenAndServe(flagAddr, nil); err != nil {
+	lis, err := getListener(flagAddr)
+	if err != nil {
+		hclog.Default().Error("failed to get listener", "err", err)
+		os.Exit(1)
+	}
+
+	if err := http.Serve(lis, nil); err != nil {
 		hclog.Default().Error("failed to serve HTTP", "err", err)
 	}
 }

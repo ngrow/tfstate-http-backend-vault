@@ -1,0 +1,11 @@
+[Unit]
+Description=Socket for HTTP backend for Terraform which uses Vault as a strorage
+Documentation=https://github.com/ngrow/tfstate-http-backend-vault
+PartOf=tfstate-http-backend-vault.service
+
+[Socket]
+BindIPv6Only=both
+ListenStream=127.0.0.1:8080
+
+[Install]
+WantedBy=sockets.target
