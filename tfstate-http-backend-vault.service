@@ -1,0 +1,13 @@
+[Unit]
+Description=HTTP backend for Terraform which uses Vault as a storage
+Documentation=https://github.com/ngrow/tfstate-http-backend-vault
+After=network.target tfstate-http-backend-vault.socket
+Requires=tfstate-http-backend-vault.socket
+
+[Service]
+Type=simple
+EnvironmentFile=~/.config/tfstate-http-backend-vault.conf
+ExecStart=~/.local/bin/tfstate-http-backend-vault
+
+[Install]
+WantedBy=tfstate-http-backend-vault.service
