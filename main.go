@@ -51,7 +51,7 @@ func newVaultClient() (*vault_api.Client, error) {
 	if _, ok := os.LookupEnv("VAULT_TOKEN"); !ok {
 		token_filename := os.Getenv("HOME") + "/.vault-token"
 		if !fileExists(token_filename) {
-			var err = errors.New("there is such file: " + token_filename)
+			var err = errors.New("there is no such file: " + token_filename)
 			hclog.Default().Error("vault token is not specified", "err", err)
 			return nil, err
 		}
