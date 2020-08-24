@@ -75,7 +75,7 @@ func newVaultClient() (*vault_api.Client, error) {
 }
 
 func getListener(flagAddr string) (net.Listener, error) {
-	if listeners, err := activation.Listeners(); err != nil {
+	if listeners, err := activation.Listeners(); err != nil || len(listeners) == 0 {
 		return net.Listen("tcp", flagAddr)
 	} else {
 		return listeners[0], nil
