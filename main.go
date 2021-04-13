@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&flagAddr, "listen-addr", ":8080", "Address to serve")
+	flag.StringVar(&flagAddr, "listen-addr", "127.0.0.1:8080", "Address to serve")
 	flag.StringVar(&flagVaultAddr, "vault-addr", "", "Adress of Vault server")
 }
 
